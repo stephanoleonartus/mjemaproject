@@ -1,3 +1,24 @@
+// --- localStorage Mock ---
+global.localStorage = (function() {
+    let store = {};
+    return {
+        getItem: function(key) {
+            return store[key] || null;
+        },
+        setItem: function(key, value) {
+            store[key] = String(value);
+        },
+        removeItem: function(key) {
+            delete store[key];
+        },
+        clear: function() {
+            store = {};
+        },
+        // Helper for debugging/testing the mock itself
+        _getStore: function() { return store; }
+    };
+})();
+
 // --- Mocking Browser Environment & HTML Elements ---
 global.document = {
     _elements: {}, // Store mock elements
@@ -83,20 +104,53 @@ let employees = [
     { id: 'admin', name: 'Administrator', email: 'admin@company.com', department: 'Admin', password: 'admin123', role: 'admin' }
 ];
 
+// --- Storage Functions (adapted from smartAttendance.html for testing) ---
+function saveToStorage() {
+    // Only handling employees for this test suite
+    const employeesJson = JSON.stringify(employees);
+    localStorage.setItem('employees', employeesJson);
+    // console.log('Mock saveToStorage: Employees saved to localStorage');
+}
+
+function loadFromStorage() {
+    // Only handling employees for this test suite
+    const storedEmployees = localStorage.getItem('employees');
+    if (storedEmployees) {
+        try {
+            const parsedEmployees = JSON.parse(storedEmployees);
+            if (Array.isArray(parsedEmployees)) {
+                employees = parsedEmployees;
+                // console.log('Mock loadFromStorage: Employees loaded from localStorage');
+                return;
+            }
+        } catch (error) {
+            console.error('Mock loadFromStorage: Error parsing employees from localStorage:', error);
+        }
+    }
+    // console.log('Mock loadFromStorage: Using default/initial employees array.');
+}
+
+
 // Helper to reset state for tests
 function resetStateAndLoginAdmin() {
-    // employees array is reset to initial state for some tests if needed, or use a deep copy
+    localStorage.clear(); // Clear localStorage before each test
+
+    // Initialize default employees and save to mock localStorage
     employees = [
         { id: 'emp001', name: 'John Doe', email: 'john@company.com', department: 'IT', password: 'password123', role: 'employee' },
         { id: 'emp002', name: 'Jane Smith', email: 'jane@company.com', department: 'HR', password: 'password123', role: 'employee' },
         { id: 'admin', name: 'Administrator', email: 'admin@company.com', department: 'Admin', password: 'admin123', role: 'admin' }
     ];
+    saveToStorage(); // Save initial state to mock localStorage
+
+    // Now load from storage to ensure 'employees' array is populated as it would be in the app
+    loadFromStorage();
+
     currentUser = null;
     lastAlert = null;
 
     // Clear mock DOM store to simulate fresh page elements for each test context
     document._elements = {};
-
 
     // Mock login form elements
     document.getElementById('employeeId').value = 'admin';
@@ -151,6 +205,7 @@ function handleAddEmployee(e) {
         id: newEmpId, name: newEmpName, email: newEmpEmail,
         department: newEmpDept, password: newEmpPassword, role: 'employee' // Default role
     });
+    saveToStorage(); // Ensure persistence after adding
     showAlert('Employee added successfully!', 'success', 'alertContainer2');
 
     // Simulate closing modal and resetting form, which would happen in browser
@@ -336,6 +391,59 @@ runTest("Test 5: Investigate Edit/Delete Functionality", () => {
         console.log("  TEST 5 PASSED (Edit/Delete functionality is not implemented, as expected by placeholder).");
     } else {
         console.log("  TEST 5 FAILED (Either placeholder is missing, or unexpected edit/delete controls were found).");
+        allTestsPassed = false;
+    }
+});
+
+runTest("Test 6: Add New Employee and Verify Persistence", () => {
+    const newEmployeeData = {
+        id: 'emp004', name: 'Persistent User', email: 'persist@company.com',
+        department: 'Storage', password: 'localpassword'
+    };
+
+    // 1. Add employee
+    document.getElementById('newEmpId').value = newEmployeeData.id;
+    document.getElementById('newEmpName').value = newEmployeeData.name;
+    document.getElementById('newEmpEmail').value = newEmployeeData.email;
+    document.getElementById('newEmpDept').value = newEmployeeData.department;
+    document.getElementById('newEmpPassword').value = newEmployeeData.password;
+    handleAddEmployee({ preventDefault: () => {} });
+    console.log("  Employee added, alert:", lastAlert);
+
+    // 2. Simulate reload: Reset in-memory employees and load from mock localStorage
+    console.log("  Simulating reload by clearing current 'employees' array and calling loadFromStorage().");
+    employees = []; // Clear the current in-memory array
+    loadFromStorage(); // Load from mock localStorage
+
+    // 3. Verify employee is present in the reloaded data
+    const reloadedEmployee = employees.find(emp => emp.id === newEmployeeData.id);
+    console.log("  Employee found in 'employees' array after reload:", !!reloadedEmployee);
+    if (reloadedEmployee) {
+        console.log("  Details of reloaded employee:", reloadedEmployee.name, reloadedEmployee.email);
+    }
+
+
+    // 4. Verify employee is rendered in the list
+    loadEmployeesList(); // Re-render the list with data from potentially reloaded employees
+    const employeeListHTML = document.getElementById('employeesList').innerHTML;
+    const emp004FoundInHTML = employeeListHTML.includes(newEmployeeData.id) && employeeListHTML.includes(newEmployeeData.name);
+    console.log(`  New employee '${newEmployeeData.id}' (${newEmployeeData.name}) found in list HTML after reload:`, emp004FoundInHTML);
+
+    const initialDefaultEmployeesCount = 2; // emp001, emp002 (excluding admin)
+    const expectedTotalEmployees = initialDefaultEmployeesCount + 1; // emp001, emp002, emp004
+    const currentEmployeeCountInArray = employees.filter(e => e.role === 'employee').length;
+    console.log("  Current employee count in array after reload:", currentEmployeeCountInArray);
+    console.log("  Expected employee count in array after reload:", expectedTotalEmployees);
+
+
+    if (lastAlert === 'Employee added successfully!' &&
+        reloadedEmployee &&
+        reloadedEmployee.name === newEmployeeData.name &&
+        emp004FoundInHTML &&
+        currentEmployeeCountInArray === expectedTotalEmployees) {
+        console.log("  TEST 6 PASSED");
+    } else {
+        console.log("  TEST 6 FAILED");
         allTestsPassed = false;
     }
 });
