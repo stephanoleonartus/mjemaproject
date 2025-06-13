@@ -530,12 +530,85 @@
         }
 
         function loadFromStorage() {
-            // In a real application, this would load from a database
-            // For demo purposes, we'll use the hardcoded data
+            // Check if 'employees' item exists in localStorage
+            const storedEmployees = localStorage.getItem('employees');
+            if (storedEmployees) {
+                try {
+                    // Parse it (it will be stored as a JSON string)
+                    const parsedEmployees = JSON.parse(storedEmployees);
+                    if (Array.isArray(parsedEmployees) && parsedEmployees.length > 0) {
+                        employees = parsedEmployees;
+                        console.log('Employees loaded from localStorage');
+                        return; // Exit if successfully loaded
+                    }
+                } catch (error) {
+                    console.error('Error parsing employees from localStorage:', error);
+                    // Fallback to hardcoded data if error parsing
+                }
+            }
+            // If it doesn't exist or there's an error parsing, the existing behavior (using hardcoded data) should be the fallback.
+            // The hardcoded data is already assigned to 'employees' globally, so no explicit action needed here for fallback.
+            console.log('Using hardcoded employee data.');
+
+            // Load attendanceData
+            const storedAttendanceData = localStorage.getItem('attendanceData');
+            if (storedAttendanceData) {
+                try {
+                    const parsedAttendanceData = JSON.parse(storedAttendanceData);
+                    if (Array.isArray(parsedAttendanceData)) {
+                        attendanceData = parsedAttendanceData;
+                        console.log('Attendance data loaded from localStorage');
+                    }
+                } catch (error) {
+                    console.error('Error parsing attendance data from localStorage:', error);
+                    // If error, attendanceData remains an empty array as initialized
+                }
+            }
+
+            // Load geofenceConfig
+            const storedGeofenceConfig = localStorage.getItem('geofenceConfig');
+            if (storedGeofenceConfig) {
+                try {
+                    const parsedGeofenceConfig = JSON.parse(storedGeofenceConfig);
+                    if (typeof parsedGeofenceConfig === 'object' && parsedGeofenceConfig !== null) {
+                        geofenceConfig = parsedGeofenceConfig;
+                        console.log('Geofence config loaded from localStorage');
+                    }
+                } catch (error) {
+                    console.error('Error parsing geofence config from localStorage:', error);
+                    // If error, geofenceConfig remains the hardcoded default
+                }
+            }
+            populateGeofenceForm(); // Update form with loaded or default values
+        }
+
+        function populateGeofenceForm() {
+            if(document.getElementById('locationName')) { // Check if admin elements are present
+                document.getElementById('locationName').value = geofenceConfig.name;
+                document.getElementById('centerLat').value = geofenceConfig.centerLat;
+                document.getElementById('centerLng').value = geofenceConfig.centerLng;
+                document.getElementById('radius').value = geofenceConfig.radius;
+            }
         }
 
         function saveToStorage() {
-            // In a real application, this would save to a database
+            // Convert the employees array to a JSON string
+            const employeesJson = JSON.stringify(employees);
+            // Store this string in localStorage under the key 'employees'
+            localStorage.setItem('employees', employeesJson);
+            console.log('Employees saved to localStorage');
+
+            // Convert the attendanceData array to a JSON string
+            const attendanceDataJson = JSON.stringify(attendanceData);
+            // Store this string in localStorage under the key 'attendanceData'
+            localStorage.setItem('attendanceData', attendanceDataJson);
+            console.log('Attendance data saved to localStorage');
+
+            // Convert the geofenceConfig object to a JSON string
+            const geofenceConfigJson = JSON.stringify(geofenceConfig);
+            // Store this string in localStorage under the key 'geofenceConfig'
+            localStorage.setItem('geofenceConfig', geofenceConfigJson);
+            console.log('Geofence config saved to localStorage');
         }
 
         function handleLogin(e) {
@@ -812,6 +885,8 @@
                 loadEmployeesList();
             } else if (tabName === 'attendance') {
                 loadRealTimeAttendance();
+            } else if (tabName === 'geofence') {
+                populateGeofenceForm(); // Ensure form is up-to-date when tab is switched
             }
         }
 
