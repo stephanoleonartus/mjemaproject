@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #0f46bd 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #4a5568;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #121494);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-form, .dashboard {
+            display: none;
+        }
+
+        .login-form.active, .dashboard.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 20px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status-card.checked-out {
+            background: linear-gradient(135deg, #ed8936, #dd6b20);
+        }
+
+        .attendance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .attendance-item {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .location-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .location-allowed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .location-denied {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .employee-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .employee-table th,
+        .employee-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .employee-table th {
+            background: #f7fafc;
+            font-weight: 600;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #a0aec0;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+
+        .geofence-config {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .current-location {
+            background: #e6fffa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #81e6d9;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Form -->
+        <div class="login-form active" id="loginForm">
+            <div class="card">
+                <div class="header">
+                    <h1>🏢 Smart Attendance System</h1>
+                    <p>Secure Location-Based Attendance Management</p>
+                </div>
+                
+                <div id="alertContainer"></div>
+                
+                <form id="loginFormElement">
+                    <div class="form-group">
+                        <label for="employeeId">Employee ID / Email</label>
+                        <input type="text" id="employeeId" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="role">Login As</label>
+                        <select id="role">
+                            <option value="employee">Employee</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn">🔐 Login</button>
+                </form>
+                
+                <div style="margin-top: 20px; text-align: center; font-size: 14px; color: #666;">
+                    <p><strong>Demo Credentials:</strong></p>
+                    <p>Employee: emp001 / password123</p>
+                    <p>Admin: admin / admin123</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dashboard -->
+        <div class="dashboard" id="dashboard">
+            <div class="card">
+                <div class="header">
+                    <h1>📊 Dashboard</h1>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span id="welcomeMessage"></span>
+                        <button class="btn btn-danger" onclick="logout()">🚪 Logout</button>
+                    </div>
+                </div>
+                
+                <div id="alertContainer2"></div>
+                
+                <!-- Employee Dashboard -->
+                <div id="employeeDashboard">
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab('attendance')">📝 Mark Attendance</div>
+                        <div class="tab" onclick="switchTab('history')">📋 My Records</div>
+                    </div>
+                    
+                    <!-- Attendance Tab -->
+                    <div class="tab-content active" id="attendanceTab">
+                        <div class="status-card" id="statusCard">
+                            <h3 id="statusText">Ready to Check In</h3>
+                            <p id="lastAction">No recent activity</p>
+                        </div>
+                        
+                        <div class="current-location" id="locationInfo">
+                            <h4>📍 Current Location Status</h4>
+                            <p id="locationText">Detecting location...</p>
+                            <p id="coordinates"></p>
+                        </div>
+                        
+                        <div style="text-align: center;">
+                            <button class="btn btn-success" id="checkInBtn" onclick="markAttendance('in')">
+                                ⏰ Check In
+                            </button>
+                            <button class="btn btn-danger" id="checkOutBtn" onclick="markAttendance('out')" disabled>
+                                🏃 Check Out
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- History Tab -->
+                    <div class="tab-content" id="historyTab">
+                        <h3>📅 My Attendance History</h3>
+                        <div id="attendanceHistory"></div>
+                    </div>
+                </div>
+                
+                <!-- Admin Dashboard -->
+                <div id="adminDashboard" style="display: none;">
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchAdminTab('employees')">👥 Employees</div>
+                        <div class="tab" onclick="switchAdminTab('attendance')">📊 Attendance</div>
+                        <div class="tab" onclick="switchAdminTab('geofence')">🗺️ Geofence</div>
+                        <div class="tab" onclick="switchAdminTab('reports')">📈 Reports</div>
+                    </div>
+                    
+                    <!-- Employees Tab -->
+                    <div class="tab-content active" id="employeesTab">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3>👥 Employee Management</h3>
+                            <button class="btn" onclick="openModal('addEmployeeModal')">➕ Add Employee</button>
+                        </div>
+                        <div id="employeesList"></div>
+                    </div>
+                    
+                    <!-- Attendance Tab -->
+                    <div class="tab-content" id="adminAttendanceTab">
+                        <h3>📊 Real-time Attendance Monitor</h3>
+                        <div id="realTimeAttendance"></div>
+                    </div>
+                    
+                    <!-- Geofence Tab -->
+                    <div class="tab-content" id="geofenceTab">
+                        <h3>🗺️ Geofence Configuration</h3>
+                        <div class="geofence-config">
+                            <div class="form-group">
+                                <label>Office Location Name</label>
+                                <input type="text" id="locationName" value="Main Office">
+                            </div>
+                            <div class="form-group">
+                                <label>Latitude</label>
+                                <input type="number" id="centerLat" step="0.000001" value="-6.7924">
+                            </div>
+                            <div class="form-group">
+                                <label>Longitude</label>
+                                <input type="number" id="centerLng" step="0.000001" value="39.2083">
+                            </div>
+                            <div class="form-group">
+                                <label>Radius (meters)</label>
+                                <input type="number" id="radius" value="100" min="10" max="1000">
+                            </div>
+                            <button class="btn" onclick="updateGeofence()">💾 Update Geofence</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Reports Tab -->
+                    <div class="tab-content" id="reportsTab">
+                        <h3>📈 Attendance Reports</h3>
+                        <div style="margin-bottom: 20px;">
+                            <select id="reportType">
+                                <option value="daily">Daily Report</option>
+                                <option value="weekly">Weekly Report</option>
+                                <option value="monthly">Monthly Report</option>
+                            </select>
+                            <input type="date" id="reportDate">
+                            <button class="btn" onclick="generateReport()">📄 Generate Report</button>
+                        </div>
+                        <div id="reportResults"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Employee Modal -->
+    <div class="modal" id="addEmployeeModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addEmployeeModal')">&times;</span>
+            <h3>➕ Add New Employee</h3>
+            <form id="addEmployeeForm">
+                <div class="form-group">
+                    <label>Employee ID</label>
+                    <input type="text" id="newEmpId" required>
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="newEmpName" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="newEmpEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" id="newEmpDept" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="newEmpPassword" required>
+                </div>
+                <button type="submit" class="btn">➕ Add Employee</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let currentLocation = null;
+        let attendanceData = [];
+        let employees = [
+            { id: 'emp001', name: 'John Doe', email: 'john@company.com', department: 'IT', password: 'password123', role: 'employee' },
+            { id: 'emp002', name: 'Jane Smith', email: 'jane@company.com', department: 'HR', password: 'password123', role: 'employee' },
+            { id: 'admin', name: 'Administrator', email: 'admin@company.com', department: 'Admin', password: 'admin123', role: 'admin' }
+        ];
+        
+        // Geofence configuration (Dar es Salaam coordinates as default)
+        let geofenceConfig = {
+            name: 'Main Office',
+            centerLat: -6.7924,
+            centerLng: 39.2083,
+            radius: 100 // meters
+        };
+        
+        // Work hours configuration
+        const workHours = {
+            start: '08:00',
+            end: '17:00'
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            // Load data from storage if available
+            loadFromStorage();
+            
+            // Setup event listeners
+            document.getElementById('loginFormElement').addEventListener('submit', handleLogin);
+            document.getElementById('addEmployeeForm').addEventListener('submit', handleAddEmployee);
+            
+            // Start location detection
+            detectLocation();
+            
+            // Set current date for report
+            document.getElementById('reportDate').valueAsDate = new Date();
+        }
+
+        function loadFromStorage() {
+            // In a real application, this would load from a database
+            // For demo purposes, we'll use the hardcoded data
+        }
+
+        function saveToStorage() {
+            // In a real application, this would save to a database
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            
+            const employeeId = document.getElementById('employeeId').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+            
+            // Find user
+            const user = employees.find(emp => 
+                (emp.id === employeeId || emp.email === employeeId) && 
+                emp.password === password && 
+                emp.role === role
+            );
+            
+            if (user) {
+                currentUser = user;
+                showDashboard();
+                showAlert('Login successful! Welcome ' + user.name, 'success');
+            } else {
+                showAlert('Invalid credentials. Please try again.', 'error');
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginForm').classList.remove('active');
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('welcomeMessage').textContent = `Welcome, ${currentUser.name}`;
+            
+            if (currentUser.role === 'admin') {
+                document.getElementById('employeeDashboard').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                loadEmployeesList();
+                loadRealTimeAttendance();
+            } else {
+                document.getElementById('employeeDashboard').style.display = 'block';
+                document.getElementById('adminDashboard').style.display = 'none';
+                updateAttendanceStatus();
+                loadAttendanceHistory();
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('loginForm').classList.add('active');
+            document.getElementById('loginFormElement').reset();
+            showAlert('Logged out successfully', 'success');
+        }
+
+        function detectLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        };
+                        updateLocationStatus();
+                    },
+                    function(error) {
+                        console.error('Geolocation error:', error);
+                        document.getElementById('locationText').innerHTML = 
+                            '<span style="color: #e53e3e;">⚠️ Location access denied. Please enable GPS.</span>';
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            } else {
+                document.getElementById('locationText').innerHTML = 
+                    '<span style="color: #e53e3e;">⚠️ Geolocation is not supported by this browser.</span>';
+            }
+        }
+
+        function updateLocationStatus() {
+            if (!currentLocation) return;
+            
+            const distance = calculateDistance(
+                currentLocation.lat, currentLocation.lng,
+                geofenceConfig.centerLat, geofenceConfig.centerLng
+            );
+            
+            const isWithinGeofence = distance <= geofenceConfig.radius;
+            const locationElement = document.getElementById('locationText');
+            const coordinatesElement = document.getElementById('coordinates');
+            
+            if (isWithinGeofence) {
+                locationElement.innerHTML = `✅ You are within the office zone (${Math.round(distance)}m from center)`;
+                locationElement.className = 'location-allowed';
+            } else {
+                locationElement.innerHTML = `❌ You are outside the office zone (${Math.round(distance)}m from center)`;
+                locationElement.className = 'location-denied';
+            }
+            
+            coordinatesElement.textContent = 
+                `Coordinates: ${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)}`;
+        }
+
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371e3; // Earth's radius in meters
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lng2-lng1) * Math.PI/180;
+
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                    Math.cos(φ1) * Math.cos(φ2) *
+                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+            return R * c;
+        }
+
+        function markAttendance(type) {
+            if (!currentLocation) {
+                showAlert('Location not detected. Please enable GPS and try again.', 'error', 'alertContainer2');
+                return;
+            }
+            
+            const distance = calculateDistance(
+                currentLocation.lat, currentLocation.lng,
+                geofenceConfig.centerLat, geofenceConfig.centerLng
+            );
+            
+            const isWithinGeofence = distance <= geofenceConfig.radius;
+            const currentTime = new Date();
+            const timeString = currentTime.toTimeString().split(' ')[0];
+            
+            // Check if within geofence
+            if (!isWithinGeofence) {
+                showAlert(`Attendance not allowed. You are ${Math.round(distance)}m away from the office zone.`, 'error', 'alertContainer2');
+                return;
+            }
+            
+            // Check work hours for check-in
+            if (type === 'in' && !isWithinWorkHours(timeString)) {
+                showAlert('Check-in is only allowed during work hours (08:00 - 17:00).', 'error', 'alertContainer2');
+                return;
+            }
+            
+            // Record attendance
+            const attendanceRecord = {
+                employeeId: currentUser.id,
+                employeeName: currentUser.name,
+                type: type,
+                timestamp: currentTime.toISOString(),
+                location: currentLocation,
+                distance: Math.round(distance),
+                date: currentTime.toDateString()
+            };
+            
+            attendanceData.push(attendanceRecord);
+            saveToStorage();
+            
+            updateAttendanceStatus();
+            showAlert(`${type === 'in' ? 'Check-in' : 'Check-out'} recorded successfully!`, 'success', 'alertContainer2');
+        }
+
+        function isWithinWorkHours(timeString) {
+            const [hours, minutes] = timeString.split(':').map(Number);
+            const currentMinutes = hours * 60 + minutes;
+            const startMinutes = 8 * 60; // 08:00
+            const endMinutes = 17 * 60; // 17:00
+            
+            return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+        }
+
+        function updateAttendanceStatus() {
+            const today = new Date().toDateString();
+            const todayRecords = attendanceData.filter(record => 
+                record.employeeId === currentUser.id && record.date === today
+            );
+            
+            const lastCheckIn = todayRecords.filter(r => r.type === 'in').pop();
+            const lastCheckOut = todayRecords.filter(r => r.type === 'out').pop();
+            
+            const statusCard = document.getElementById('statusCard');
+            const statusText = document.getElementById('statusText');
+            const lastAction = document.getElementById('lastAction');
+            const checkInBtn = document.getElementById('checkInBtn');
+            const checkOutBtn = document.getElementById('checkOutBtn');
+            
+            if (!lastCheckIn) {
+                // Not checked in yet
+                statusText.textContent = 'Ready to Check In';
+                lastAction.textContent = 'No check-in recorded today';
+                statusCard.className = 'status-card';
+                checkInBtn.disabled = false;
+                checkOutBtn.disabled = true;
+            } else if (!lastCheckOut || new Date(lastCheckIn.timestamp) > new Date(lastCheckOut.timestamp)) {
+                // Checked in, not checked out
+                statusText.textContent = 'Currently Checked In';
+                lastAction.textContent = `Checked in at ${new Date(lastCheckIn.timestamp).toLocaleTimeString()}`;
+                statusCard.className = 'status-card';
+                checkInBtn.disabled = true;
+                checkOutBtn.disabled = false;
+            } else {
+                // Checked out
+                statusText.textContent = 'Checked Out';
+                lastAction.textContent = `Checked out at ${new Date(lastCheckOut.timestamp).toLocaleTimeString()}`;
+                statusCard.className = 'status-card checked-out';
+                checkInBtn.disabled = false;
+                checkOutBtn.disabled = true;
+            }
+        }
+
+        function loadAttendanceHistory() {
+            const userRecords = attendanceData.filter(record => record.employeeId === currentUser.id);
+            const historyContainer = document.getElementById('attendanceHistory');
+            
+            if (userRecords.length === 0) {
+                historyContainer.innerHTML = '<p>No attendance records found.</p>';
+                return;
+            }
+            
+            // Group by date
+            const groupedRecords = {};
+            userRecords.forEach(record => {
+                const date = record.date;
+                if (!groupedRecords[date]) {
+                    groupedRecords[date] = [];
+                }
+                groupedRecords[date].push(record);
+            });
+            
+            let html = '<div class="attendance-grid">';
+            
+            Object.keys(groupedRecords).sort().reverse().forEach(date => {
+                const records = groupedRecords[date];
+                const checkIn = records.find(r => r.type === 'in');
+                const checkOut = records.find(r => r.type === 'out');
+                
+                html += `
+                    <div class="attendance-item">
+                        <h4>📅 ${date}</h4>
+                        <p><strong>Check-in:</strong> ${checkIn ? new Date(checkIn.timestamp).toLocaleTimeString() : 'Not recorded'}</p>
+                        <p><strong>Check-out:</strong> ${checkOut ? new Date(checkOut.timestamp).toLocaleTimeString() : 'Not recorded'}</p>
+                        <p><strong>Location Accuracy:</strong> ${checkIn ? checkIn.distance + 'm from office' : 'N/A'}</p>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            historyContainer.innerHTML = html;
+        }
+
+        function switchTab(tabName) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to selected tab
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            if (tabName === 'history') {
+                loadAttendanceHistory();
+            }
+        }
+
+        function switchAdminTab(tabName) {
+            document.querySelectorAll('#adminDashboard .tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('#adminDashboard .tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            if (tabName === 'employees') {
+                loadEmployeesList();
+            } else if (tabName === 'attendance') {
+                loadRealTimeAttendance();
+            }
+        }
+
+        function loadEmployeesList() {
+            const container = document.getElementById('employeesList');
+            let html = `
+                <table class="employee-table">
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            employees.filter(emp => emp.role === 'employee').forEach(employee => {
+                html += `
+                    <tr>
+                        <td>${employee.id}</td>
+                        <td>${employee.name}</td>
+                        <td>${employee.email}</td>
+                        <td>${employee.department}</td>
